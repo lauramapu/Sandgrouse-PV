@@ -30,6 +30,7 @@ library(car) # vif
 library(readxl)
 library(stringdist)
 library(exactextractr)
+library(ggpubr)
 
 # function to list and cite all the above packages
 versionandcitation <- function() {

@@ -28,8 +28,8 @@ ort_ebird[] <- ifelse(values(ort_ebird) %in% ncell, 1, 0)
 writeRaster(pts_ebird, 'data/alchata_ebird.asc', format='ascii', overwrite=T)
 writeRaster(ort_ebird, 'data/orientalis_ebird.asc', format='ascii', overwrite=T)
 
-data <- as.data.frame(stack('results/iberica_r_presence.asc',
-                            'results/ortega_r_presence.asc',
+data <- as.data.frame(stack('data/iberica_r_presence.asc',
+                            'data/ortega_r_presence.asc',
                             'data/alchata_ebird.asc',
                             'data/orientalis_ebird.asc',
                             'results/iberica_preds.asc',
@@ -136,7 +136,7 @@ mapview(alldistris_nofilt_r) + mapview(presence_p)
 mapview(alldistris_p) + mapview(alldistris_nofilt_r) 
 
 writeRaster(alldistris_r, 'results/alldistris_r.asc', format='ascii', overwrite=T)
-write_sf(alldistris_points, 'results/alldistris_points.shp')
+#write_sf(alldistris_p, 'results/alldistris_p.shp')
 
 ############################################################
 
@@ -156,18 +156,18 @@ ccaa <- esp_get_ccaa(epsg = 4326, moveCAN = F) # with CCAA
 ccaa <- ccaa[!ccaa$nuts2.name %in% c("Illes Balears", "Canarias"),]
 
 plot1 <- ggplot(onlypresence, aes(x = x, y = y, fill = alldistris)) +
-  geom_raster() +
-  scale_fill_viridis(title('')) +
-  labs(x = "Longitude", y = "Latitude", title = "Presence cells: sum of presences + suitabilities") +
+  geom_tile() +
+  scale_fill_viridis(name = "No-Go area score") +
+  labs(x = "Longitude", y = "Latitude") +
   theme_bw() +
   geom_sf(data = ccaa, fill = "transparent", color = "black", inherit.aes = FALSE)
 plot1 <- get_leyend(plot1, x = 0.70, y = 0.15)
 plot1
 
 plot2 <- ggplot(everything, aes(x = x, y = y, fill = alldistris_nofilt)) +
-  geom_raster() +
-  scale_fill_viridis(title('Sum')) +
-  labs(x = "Longitude", y = "Latitude", title = "All cells: sum of presences + suitabilities") +
+  geom_tile() +
+  scale_fill_viridis(name = "No-Go area score") +
+  labs(x = "Longitude", y = "Latitude") +
   theme_bw() +
   geom_sf(data = ccaa, fill = "transparent", color = "black", inherit.aes = FALSE)
 plot2 <- get_leyend(plot2, x = 0.70, y = 0.15)
@@ -175,3 +175,34 @@ plot2
 
 plot3 <- grid.arrange(plot1, plot2, ncol=2)
 ggsave('results/nogo-areas.jpg', plot3, height=5, width=14)
+
+
+# separate en two categories: strict No Go areas and recommended No Go areas
+
+onlypresence$no_go <- ifelse(onlypresence$alldistris >=4, "Strict", "Recommended")
+
+plot4 <- ggplot(onlypresence, aes(x = x, y = y, fill = no_go)) +
+  geom_tile() +
+  scale_fill_viridis(name = "No-Go areas", discrete = T) +
+  labs(x = "Longitude", y = "Latitude") +
+  theme_bw() +
+  geom_sf(data = ccaa, fill = "transparent", color = "darkgrey", inherit.aes = FALSE) 
+plot4 <- get_leyend(plot4, x = 0.70, y = 0.15)
+plot4
+
+everything$no_go <- ifelse(everything$alldistris_nofilt >=4, "Strict", "Recommended")
+
+plot5 <- ggplot(everything, aes(x = x, y = y, fill = no_go)) +
+  geom_tile() +
+  scale_fill_viridis(name = "No-Go areas", discrete = T) +
+  labs(x = "Longitude", y = "Latitude") +
+  theme_bw() +
+  geom_sf(data = ccaa, fill = "transparent", color = "darkgrey", inherit.aes = FALSE) 
+plot5 <- get_leyend(plot5, x = 0.70, y = 0.15)
+plot5
+
+plot6 <- ggarrange(plot1, plot2, plot4, plot5, ncol = 2, nrow = 2, align = "hv")
+ggsave('results/nogo-areas_4panel.jpg', plot6, height = 10, width = 12)
+
+plot7 <- ggarrange(plot1, plot4, ncol = 2, align = "h")
+ggsave('results/nogo-areas_presence.jpg', plot7, height = 5, width = 12)

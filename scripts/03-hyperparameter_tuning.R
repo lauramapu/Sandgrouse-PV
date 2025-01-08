@@ -7,10 +7,9 @@
 rm(list=ls())
 source('scripts/utils.R') # all used libraries and my custom functions
 
-library(doParallel) 
-# n_cores <- strtoi(Sys.getenv("SLURM_CPUS_PER_TASK")) # slurm cores
+# n_cores <- strtoi(Sys.getenv('SLURM_CPUS_PER_TASK')) # slurm cores
 n.cores <- parallel::detectCores() - 1
-my.cluster <- parallel::makeCluster(n.cores, type = "PSOCK")
+my.cluster <- parallel::makeCluster(n.cores, type = 'PSOCK')
 doParallel::registerDoParallel(cl = my.cluster)
 foreach::getDoParRegistered()
 foreach::getDoParWorkers()
@@ -23,7 +22,7 @@ x <- foreach(
 }
 x # check parallel execution is on
 
-dataset <- na.omit(read.csv2("data/iberica_PA_present.csv"))
+dataset <- na.omit(read.csv('data/iberica_PA_present.csv'))
 dataset$PA <- as.factor(dataset$PA)
 
 # create metrics df to append results in the loop
@@ -39,13 +38,13 @@ set.seed(123)
 grid <- expand.grid(mtry = 2:15, # variables in each tree
                     ntree = seq(1000, 10000, by = 1000), # trees in each forest
                     nodesize = seq(10, nrow(dataset[dataset$PA==1,]), by = 10)) # minimum size of terminal nodes
-write.csv2(grid, "data/grid_iberica.csv", row.names=F)
-# grid <- read.csv2("data/grid_iberica.csv")
+write.csv(grid, 'data/grid_iberica.csv', row.names=F)
+# grid <- read.csv('data/grid_iberica.csv')
 
 # run models iterating through each hyperpar combination
-tic("random hyperparameters")
+tic('random hyperparameters')
 metrics <- foreach(i = 1:nrow(grid),
-                   .packages=c("randomForest", "sf", "dplyr", "pROC", "caret"),
+                   .packages=c('randomForest', 'sf', 'dplyr', 'pROC', 'caret'),
                    .combine='rbind') %:% # iterations through hyperpar combinations
   
   foreach(j = 1:5,
@@ -60,10 +59,10 @@ metrics <- foreach(i = 1:nrow(grid),
             test <- dataset[-index, ]  
             
             # extracting sample size
-            prNum <- as.numeric(table(train$PA)["1"]) # number of presences
+            prNum <- as.numeric(table(train$PA)['1']) # number of presences
             
             # set sample size as vector, same size for 0 and for 1
-            samsize <- c("0" = prNum, "1" = prNum)
+            samsize <- c('0' = prNum, '1' = prNum)
             
             # train the model
             model <- randomForest(PA ~ . -X -Y -Species,
@@ -75,7 +74,7 @@ metrics <- foreach(i = 1:nrow(grid),
                                   nodesize = grid[i,3])
             
             # generate training predictions (only select probs of presence)
-            preds<-predict(model, type="prob")
+            preds<-predict(model, type='prob')
             train$pred<-preds[,2]
             
             # create ROC curve to calculate thresholds
@@ -83,14 +82,14 @@ metrics <- foreach(i = 1:nrow(grid),
             
             # calculate thresholds and binarize preds
             # maxTSS
-            maxTSS <- coords(roc_curve, "best", maximize="tss")$threshold
+            maxTSS <- coords(roc_curve, 'best', maximize='tss')$threshold
             train$pred <- ifelse(train$pred > maxTSS, 1, 0)
             
             # AUC training per thresholds
             auc_train <- pROC::auc(as.numeric(train$PA), as.numeric(train$pred))
             
             # bin preds as factors because needed by confusionmatrix
-            train$pred <- factor(train$pred, levels = c("0", "1"))
+            train$pred <- factor(train$pred, levels = c('0', '1'))
             
             # confusion matrix of the training per thresholds
             cm_train <- confusionMatrix(train$pred, train$PA, '1')
@@ -99,7 +98,7 @@ metrics <- foreach(i = 1:nrow(grid),
             tss_train <- cm_train$byClass[['Sensitivity']] + cm_train$byClass[['Specificity']] - 1
             
             # generate testing predictions and binaries from maxSSS
-            preds <- data.frame(pred = predict(model, newdata = test, type ="prob"))
+            preds <- data.frame(pred = predict(model, newdata = test, type ='prob'))
             test$pred <- preds[,2]
             test$pred <- ifelse(test$pred > maxTSS, 1, 0)
             
@@ -107,7 +106,7 @@ metrics <- foreach(i = 1:nrow(grid),
             auc_test <- pROC::auc(as.numeric(test$PA), as.numeric(test$pred))
             
             # bin preds as factors because needed by confusionmatrix
-            test$pred <- factor(test$pred, levels = c("0", "1"))
+            test$pred <- factor(test$pred, levels = c('0', '1'))
             
             # confusion matrix of the testing per thresholds
             cm_test <- confusionMatrix(test$pred, test$PA, '1')
@@ -137,14 +136,14 @@ toc()
 # assign col names
 metrics <- as.data.frame(metrics)
 colnames(metrics) <- column_names
-write.csv2(metrics, "results/hyperparameters_iberica.csv", row.names = F)
-# metrics <- read.csv2("results/hyperparameters_iberica.csv")
+write.csv(metrics, 'results/hyperparameters_iberica.csv', row.names = F)
+# metrics <- read.csv('results/hyperparameters_iberica.csv')
 
 metrics_mean <- metrics %>%
   group_by(combination) %>%
   summarise(across(-fold, mean))
-write.csv2(metrics_mean, "results/hyperparameters_iberica_mean.csv", row.names = F)
-# metrics_mean <- read.csv2("results/hyperparameters_iberica_mean.csv")
+write.csv(metrics_mean, 'results/hyperparameters_iberica_mean.csv', row.names = F)
+# metrics_mean <- read.csv('results/hyperparameters_iberica_mean.csv')
 
 # best combination should be the one that gets higher sensitivity
 # and lower difference between training and testing sensitivity
@@ -165,8 +164,15 @@ metrics_mean[which.min(metrics_mean$sens_diff),]
 
 ### now with ortega
 rm(list=ls())
+source('scripts/utils.R') # all used libraries and my custom functions
 
-dataset <- na.omit(read.csv2("data/ortega_PA_present.csv"))
+# n_cores <- strtoi(Sys.getenv('SLURM_CPUS_PER_TASK')) # slurm cores
+n.cores <- parallel::detectCores() - 1
+my.cluster <- parallel::makeCluster(n.cores, type = 'PSOCK')
+doParallel::registerDoParallel(cl = my.cluster)
+foreach::getDoParRegistered()
+foreach::getDoParWorkers()
+dataset <- na.omit(read.csv('data/ortega_PA_present.csv'))
 dataset$PA <- as.factor(dataset$PA)
 
 # create metrics df to append results in the loop
@@ -182,13 +188,13 @@ set.seed(123)
 grid <- expand.grid(mtry = 2:15, # variables in each tree
                     ntree = seq(1000, 10000, by = 1000), # trees in each forest
                     nodesize = seq(10, nrow(dataset[dataset$PA==1,]), by = 10)) # minimum size of terminal nodes
-write.csv2(grid, "data/grid_ortega.csv", row.names=F)
-# grid <- read.csv2("data/grid_ortega.csv")
+write.csv(grid, 'data/grid_ortega.csv', row.names=F)
+# grid <- read.csv('data/grid_ortega.csv')
 
 # run models iterating through each hyperpar. combination
-tic("random hyperparameters")
+tic('random hyperparameters')
 metrics <- foreach(i = 1:nrow(grid),
-                   .packages=c("randomForest", "sf", "dplyr", "pROC", "caret"),
+                   .packages=c('randomForest', 'sf', 'dplyr', 'pROC', 'caret'),
                    .combine='rbind') %:% # iterations through hyperpar combinations
   
   foreach(j = 1:5,
@@ -203,10 +209,10 @@ metrics <- foreach(i = 1:nrow(grid),
             test <- dataset[-index, ]  
             
             # extracting sample size
-            prNum <- as.numeric(table(train$PA)["1"]) # number of presences
+            prNum <- as.numeric(table(train$PA)['1']) # number of presences
             
             # set sample size as vector, same size for 0 and for 1
-            samsize <- c("0" = prNum, "1" = prNum)
+            samsize <- c('0' = prNum, '1' = prNum)
             
             # train the model
             model <- randomForest(PA ~ . -X -Y -Species,
@@ -218,7 +224,7 @@ metrics <- foreach(i = 1:nrow(grid),
                                   nodesize = grid[i,3])
             
             # generate training predictions (only select probs of presence)
-            preds<-predict(model, type="prob")
+            preds<-predict(model, type='prob')
             train$pred<-preds[,2]
             
             # create ROC curve to calculate thresholds
@@ -226,14 +232,14 @@ metrics <- foreach(i = 1:nrow(grid),
             
             # calculate thresholds and binarize preds
             # maxTSS
-            maxTSS <- coords(roc_curve, "best", maximize="tss")$threshold
+            maxTSS <- coords(roc_curve, 'best', maximize='tss')$threshold
             train$pred <- ifelse(train$pred > maxTSS, 1, 0)
             
             # AUC training per thresholds
             auc_train <- pROC::auc(as.numeric(train$PA), as.numeric(train$pred))
             
             # bin preds as factors because needed by confusionmatrix
-            train$pred <- factor(train$pred, levels = c("0", "1"))
+            train$pred <- factor(train$pred, levels = c('0', '1'))
             
             # confusion matrix of the training per thresholds
             cm_train <- confusionMatrix(train$pred, train$PA, '1')
@@ -242,7 +248,7 @@ metrics <- foreach(i = 1:nrow(grid),
             tss_train <- cm_train$byClass[['Sensitivity']] + cm_train$byClass[['Specificity']] - 1
             
             # generate testing predictions and binaries from maxSSS
-            preds <- data.frame(pred = predict(model, newdata = test, type ="prob"))
+            preds <- data.frame(pred = predict(model, newdata = test, type ='prob'))
             test$pred <- preds[,2]
             test$pred <- ifelse(test$pred > maxTSS, 1, 0)
             
@@ -250,7 +256,7 @@ metrics <- foreach(i = 1:nrow(grid),
             auc_test <- pROC::auc(as.numeric(test$PA), as.numeric(test$pred))
             
             # bin preds as factors because needed by confusionmatrix
-            test$pred <- factor(test$pred, levels = c("0", "1"))
+            test$pred <- factor(test$pred, levels = c('0', '1'))
             
             # confusion matrix of the testing per thresholds
             cm_test <- confusionMatrix(test$pred, test$PA, '1')
@@ -280,14 +286,14 @@ toc()
 # assign col names
 metrics <- as.data.frame(metrics)
 colnames(metrics) <- column_names
-write.csv2(metrics, "results/hyperparameters_ortega.csv", row.names = F)
-# metrics <- read.csv2("results/hyperparameters_ortega.csv")
+write.csv(metrics, 'results/hyperparameters_ortega.csv', row.names = F)
+# metrics <- read.csv('results/hyperparameters_ortega.csv')
 
 metrics_mean <- metrics %>%
   group_by(combination) %>%
   summarise(across(-fold, mean))
-write.csv2(metrics_mean, "results/hyperparameters_ortega_mean.csv", row.names = F)
-# metrics_mean <- read.csv2("results/hyperparameters_foreach_ortega_mean.csv")
+write.csv(metrics_mean, 'results/hyperparameters_ortega_mean.csv', row.names = F)
+# metrics_mean <- read.csv('results/hyperparameters_ortega_mean.csv')
 
 metrics_mean$sum <- rowSums(metrics_mean[,5:15])
 metrics_mean[which.max(metrics_mean$sum),]

@@ -5,7 +5,14 @@ source('scripts/utils.R') # all used libraries and my custom functions
 # spanish IP borders
 spain <- getpeninsularspain()
 
-full <- read.csv('data/all_data_1x1km.csv')
+full <- as.data.frame(stack(raster('results/iberica_preds.asc'),
+                            raster('results/ortega_preds.asc'),
+                            raster('results/iberica_ssp126_preds.asc'),
+                            raster('results/ortega_ssp126_preds.asc'),
+                            raster('results/iberica_ssp585_preds.asc'),
+                            raster('results/ortega_ssp585_preds.asc')), xy=T)
+
+colnames(full)[3:8] <- c('ib_pres', 'or_pres', 'ib_sust', 'or_sust', 'ib_foss', 'or_foss')
 
 p1 <- ggplot(full, aes(x = x, y = y, fill = ib_pres)) +
   geom_raster() +
@@ -15,10 +22,11 @@ p1 <- ggplot(full, aes(x = x, y = y, fill = ib_pres)) +
   labs(x = 'Longitude', y = 'Latitude',
        title = expression(paste('a) ', italic("P. alchata"), " - Present"))) +
   theme_bw() +
-  #theme(legend.title = element_text('Suit. Prob.')) + 
+  theme(legend.position = 'none') + 
   geom_sf(data = spain, fill = 'transparent', color = 'black', inherit.aes = FALSE)
 p1
-ggsave('results/getcontlegend.jpg', p1, height=15, width=14)
+# deactivate theme to extract legend and save for paper plot
+# ggsave('results/getcontlegend.jpg', p1, height=15, width=14)
 
 p2 <- ggplot(full, aes(x = x, y = y, fill = or_pres)) +
   geom_raster() +

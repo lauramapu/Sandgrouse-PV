@@ -1,26 +1,20 @@
-library(sf)
-library(raster)
-library(dplyr)
-library(mapview)
-library(MazamaSpatialUtils)
-library(mapSpain)
-library(units)
-library(terra) # better for rasterizing
+rm(list=ls())
+source('scripts/utils.R') # all used libraries and my custom functions
 
 # some of the following processes are very heavy so it's highly recommended to run in supercluster
 
 # spanish provinces borders
 provinces <- mapSpain::esp_get_prov()
 # excluding Canarias and Baleares
-provinces <- provinces[!provinces$iso2.prov.name.es %in% c("Las Palmas", "Santa Cruz de Tenerife", "Baleares",
-                                                           "Melilla", "Ceuta"), ]
+provinces <- provinces[!provinces$iso2.prov.name.es %in% c('Las Palmas', 'Santa Cruz de Tenerife', 'Baleares',
+                                                           'Melilla', 'Ceuta'), ]
 # dissolve
 provinces$campo <- 1
 mask_spain <- provinces %>%
   dissolve(field='campo') %>%
   st_transform(crs = 3035)
 
-gpkg_files <- list.files("spatial_data/siose_ar", pattern = "\\.gpkg$",
+gpkg_files <- list.files('spatial_data/siose_ar', pattern = '\\.gpkg$',
                          full.names = TRUE, recursive = TRUE)
                          # with recursive=T it searches in all subfolders
 
@@ -29,10 +23,10 @@ extract_solar <- function(file_path) {
   # read all layers
   layers <- st_layers(file_path)
   # find the one that matches _USOS in its name
-  layer_name <- layers$name[grep("_T_USOS$", layers$name)]
+  layer_name <- layers$name[grep('_T_USOS$', layers$name)]
   if (length(layer_name) == 0) {
     # if not found return a warning
-    stop("'_T_USOS' layer not found")
+    stop(''_T_USOS' layer not found')
   }
   # read layer
   layer <- st_read(file_path, layer = layer_name[1])
@@ -70,34 +64,34 @@ for (i in 2:length(capas3)) {
 }
 mapview(sf_merged)
 
-write_sf(sf_merged, "spatial_data/solar_energy/siose_solar.shp")
+write_sf(sf_merged, 'spatial_data/solar_energy/siose_solar.shp')
 
 #############################################
 ### merging of all layers ###
 ############################################
 
 # siose
-siose <- st_read("spatial_data/solar_energy/siose_solar.shp")
+siose <- st_read('spatial_data/solar_energy/siose_solar.shp')
 # andalucia
-andalucia <- st_read("spatial_data/solar_energy/other_sources/andalucia/solar.gpkg")
+andalucia <- st_read('spatial_data/solar_energy/other_sources/andalucia/solar.gpkg')
 # aragon
-aragon <- st_read("spatial_data/solar_energy/other_sources/aragon/v_vall_aae.shp")
+aragon <- st_read('spatial_data/solar_energy/other_sources/aragon/v_vall_aae.shp')
 # cataluña
-# catalunya <- st_read("spatial_data/other_sources/catalunya/solar_multipoly.gpkg")
-# write_sf(catalunya, "spatial_data/other_sources/catalunya/solar_multipoly.shp")
-catalunya <- st_read("spatial_data/solar_energy/other_sources/catalunya/solar_multipoly.shp")
-catalunya2 <- st_read("spatial_data/solar_energy/other_sources/catalunya/solar_points.gpkg")
+# catalunya <- st_read('spatial_data/other_sources/catalunya/solar_multipoly.gpkg')
+# write_sf(catalunya, 'spatial_data/other_sources/catalunya/solar_multipoly.shp')
+catalunya <- st_read('spatial_data/solar_energy/other_sources/catalunya/solar_multipoly.shp')
+catalunya2 <- st_read('spatial_data/solar_energy/other_sources/catalunya/solar_points.gpkg')
 # navarra
-navarra <- st_read("spatial_data/solar_energy/other_sources/navarra/solar_funcionando.shp")
+navarra <- st_read('spatial_data/solar_energy/other_sources/navarra/solar_funcionando.shp')
 # valencia
-# valencia <- st_read("spatial_data/other_sources/valencia/solar.gpkg")
-# write_sf(valencia, "spatial_data/other_sources/valencia/solar_multipoly.shp")
-valencia <- st_read("spatial_data/solar_energy/other_sources/valencia/solar_multipoly.shp")
+# valencia <- st_read('spatial_data/other_sources/valencia/solar.gpkg')
+# write_sf(valencia, 'spatial_data/other_sources/valencia/solar_multipoly.shp')
+valencia <- st_read('spatial_data/solar_energy/other_sources/valencia/solar_multipoly.shp')
 # mis punticos
-punticos <- st_join(st_read("spatial_data/solar_energy/mis_punticos.shp"),
-                    st_read("spatial_data/solar_energy/punticos_angela.shp"))
-punticos <- st_join(punticos, st_read("spatial_data/solar_energy/punticos_elena.shp"))
-punticos <- st_join(punticos, st_transform(st_read("spatial_data/solar_energy/punticos_ana.shp"),
+punticos <- st_join(st_read('spatial_data/solar_energy/mis_punticos.shp'),
+                    st_read('spatial_data/solar_energy/punticos_angela.shp'))
+punticos <- st_join(punticos, st_read('spatial_data/solar_energy/punticos_elena.shp'))
+punticos <- st_join(punticos, st_transform(st_read('spatial_data/solar_energy/punticos_ana.shp'),
                                            crs = st_crs(punticos)))
 # SatlasPreTrain
 satlas <- st_read('spatial_data/solar_energy/satlas_solar/2024-01_solar.shp') %>%
@@ -162,10 +156,10 @@ extract_greenhouse <- function(file_path) {
   # read all layers
   layers <- st_layers(file_path)
   # find the one that matches POLIGONOS in its name
-  layer_name <- layers$name[grep("POLIGONOS$", layers$name)]
+  layer_name <- layers$name[grep('POLIGONOS$', layers$name)]
   if (length(layer_name) == 0) {
     # if not found return a warning
-    warning("'POLIGONOS' layer not found")
+    warning(''POLIGONOS' layer not found')
   }
   # read layer
   layer <- st_read(file_path, layer = layer_name[1])
@@ -186,8 +180,8 @@ for (i in 2:length(capas3)) {
   greenhouse <- rbind(greenhouse, capas3[[i]])
 }
 
-write_sf(greenhouse, "spatial_data/siose_ar/siose_IV.shp")
-# greenhouse <- st_read("spatial_data/siose_ar/siose_IV.shp")
+write_sf(greenhouse, 'spatial_data/siose_ar/siose_IV.shp')
+# greenhouse <- st_read('spatial_data/siose_ar/siose_IV.shp')
 
 greenhouse$campo <- 1
 greenhouse <- dissolve(greenhouse, field = 'campo')
@@ -223,8 +217,8 @@ write_sf(finalsolar, 'spatial_data/solar_energy/allsolar_cut.shp')
 # method one
 
 # read raster base and solar final polys in terra format
-base <- rast("results/iberica_preds.asc") %>%
-  project("EPSG:3035")
+base <- rast('results/iberica_preds.asc') %>%
+  project('EPSG:3035')
 base[] <- 1:ncell(base)
 solar <- vect('spatial_data/solar_energy/allsolar_cut.shp')
 
@@ -239,7 +233,7 @@ mapview(solar.cont.r, maxpixels=2025093) + mapview(solar) # super done
 
 # to raster format, resample to original and save
 raster(solar.cont.r) %>%
-  projectRaster(raster("results/iberica_preds.asc")) %>%
+  projectRaster(raster('results/iberica_preds.asc')) %>%
   raster::writeRaster('spatial_data/solar_energy/solar_continuous.asc', format='ascii', overwrite=T)
 
 # binarize solar presence
@@ -249,8 +243,8 @@ raster::writeRaster(solar.bin.r, 'spatial_data/solar_energy/solar_binary.asc', f
 
 # method two
 
-base <- rast("results/iberica_preds.asc") %>%
-  project("EPSG:3035")
+base <- rast('results/iberica_preds.asc') %>%
+  project('EPSG:3035')
 base[] <- 1:ncell(base)
 solar <- vect('spatial_data/solar_energy/allsolar_cut_diss.shp') # diss and area from QGIS
 
@@ -263,7 +257,7 @@ mapview(solar.cont.r, maxpixels=2025093) + mapview(solar) # super done
 
 # to raster format, resample to original and save
 raster(solar.cont.r) %>%
-  projectRaster(raster("results/iberica_preds.asc")) %>%
+  projectRaster(raster('results/iberica_preds.asc')) %>%
   raster::writeRaster('spatial_data/solar_energy/solar_continuous_funsum.asc', format='ascii', overwrite=T)
 
 # method one overestimates, method two underestimates
@@ -271,7 +265,7 @@ raster(solar.cont.r) %>%
 # method three: package exactextractr
 library(exactextractr)
 
-base <- raster("results/iberica_preds.asc") %>%
+base <- raster('results/iberica_preds.asc') %>%
   projectRaster(crs=3035)
 base[] <- 1:ncell(base)
 solar <- st_read('spatial_data/solar_energy/allsolar_cut_diss.shp') # diss and area from QGIS
@@ -285,5 +279,5 @@ cropped <- crop(cont2, extent(mask_spain))
 solar.cont.r <- mask(cropped, mask_spain)
 
 solar.cont.r %>%
-  projectRaster(raster("results/iberica_preds.asc")) %>%
+  projectRaster(raster('results/iberica_preds.asc')) %>%
   raster::writeRaster('spatial_data/solar_energy/solar_continuous_exactextractr.asc', format='ascii', overwrite=T)
