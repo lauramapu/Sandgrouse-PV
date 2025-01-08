@@ -1,0 +1,1 @@
+All scripts can be run in the specified order excepting 01 and 08 because of the large size of the needed files (preprocessing of environmental variables and PV databases). Script 02 must be run to generate some heavy CSV files that contains the environmental information used to predict.
